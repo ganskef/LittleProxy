@@ -1,9 +1,9 @@
 package org.littleshoot.proxy.extras;
 
+import org.littleshoot.proxy.MitmManager;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-
-import org.littleshoot.proxy.MitmManager;
 
 /**
  * {@link MitmManager} that uses self-signed certs for everything.
@@ -18,8 +18,13 @@ public class SelfSignedMitmManager implements MitmManager {
     }
 
     @Override
-    public SSLEngine clientSslEngineFor(SSLSession serverSslSession, String
-            serverHostAndPort) {
+    public SSLEngine serverSslEngine() {
+        return selfSignedSslEngineSource.newSslEngine();
+    }
+
+    @Override
+    public SSLEngine clientSslEngineFor(SSLSession serverSslSession,
+            String serverHostAndPort) {
         return selfSignedSslEngineSource.newSslEngine();
     }
 }

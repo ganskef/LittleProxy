@@ -9,19 +9,22 @@ import javax.net.ssl.SSLSession;
  */
 public interface MitmManager {
     /**
-     * Creates an {@link SSLEngine} for encrypting the server connection.
+     * Creates an {@link SSLEngine} for encrypting the server connection. The SSLEngine created by this method
+     * may use the given peer information to send SNI information when connecting to the upstream host.
+     *
+     * @param peerHost to start a client connection to the server.
+     * @param peerPort to start a client connection to the server.
      * 
-     * Note: Peer information is needed to send the server_name extension in
-     * handshake with Server Name Indication (SNI).
-     * 
-     * @param peerHost
-     *            to start a client connection to the server.
-     * @param peerPort
-     *            to start a client connection to the server. 
-     * 
-     * @return
+     * @return an SSLEngine used to connect to an upstream server
      */
     SSLEngine serverSslEngine(String peerHost, int peerPort);
+
+    /**
+     * Creates an {@link SSLEngine} for encrypting the server connection.
+     *
+     * @return an SSLEngine used to connect to an upstream server
+     */
+    SSLEngine serverSslEngine();
 
     /**
      * <p>
@@ -46,7 +49,7 @@ public interface MitmManager {
      * @param serverHostAndPort
      *            the server host name, optionally with port, to create the
      *            dynamic certificate for
-     * @return
+     * @return the SSLEngine used to connect to the client
      */
     SSLEngine clientSslEngineFor(SSLSession serverSslSession,
             String serverHostAndPort);
