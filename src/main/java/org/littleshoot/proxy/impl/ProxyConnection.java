@@ -548,20 +548,16 @@ abstract class ProxyConnection<I extends HttpObject> extends
      * Call this to stop reading.
      */
     protected void stopReading() {
-        if (channel != null) {
-            LOG.debug("Stopped reading");
-            channel.config().setAutoRead(false);
-        }
+        LOG.debug("Stopped reading");
+        this.channel.config().setAutoRead(false);
     }
 
     /**
      * Call this to resume reading.
      */
     protected void resumeReading() {
-        if (channel != null) {
-            LOG.debug("Resumed reading");
-            channel.config().setAutoRead(true);
-        }
+        LOG.debug("Resumed reading");
+        this.channel.config().setAutoRead(true);
     }
 
     /**

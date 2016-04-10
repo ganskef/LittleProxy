@@ -18,8 +18,7 @@ public class SelfSignedMitmManager implements MitmManager {
     }
 
     @Override
-    public SSLEngine clientSslEngineFor(SSLSession serverSslSession, String
-            serverHostAndPort) {
+    public SSLEngine clientSslEngineFor(SSLSession serverSslSession) {
         return selfSignedSslEngineSource.newSslEngine();
     }
 }
