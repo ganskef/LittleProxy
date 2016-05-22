@@ -736,7 +736,7 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
         protected Future<?> execute() {
             return clientConnection
                     .encrypt(proxyServer.getMitmManager()
-                            .clientSslEngineFor(sslEngine == null ? null : sslEngine.getSession(), serverHostAndPort), false)
+                            .clientSslEngineFor(initialRequest, getSSLSessionOrNull()), false)
                     .addListener(
                             new GenericFutureListener<Future<? super Channel>>() {
                                 @Override
@@ -750,6 +750,15 @@ public class ProxyToServerConnection extends ProxyConnection<HttpResponse> {
                             });
         }
     };
+
+    private SSLSession getSSLSessionOrNull() {
+        // A SSLSession in the proxy to server connection could be null in an
+        // offline situation. Therefore this avoids a NullPointerException here.
+        if (sslEngine == null) {
+            return null;
+        }
+        return sslEngine.getSession();
+    }
 
     /**
      * Called when the connection to the server or upstream chained proxy fails. This method may return true to indicate
