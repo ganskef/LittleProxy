@@ -4,15 +4,19 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.udt.nio.NioUdtProvider;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -21,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -387,19 +392,9 @@ public class ProxyUtils {
     }
 
     /**
-     * Returns true if the request is an HTTP HEAD request.
-     *
-     * @param request HTTP request
-     * @return true if request is a HEAD, otherwise false
-     */
-    public static boolean isHead(HttpRequest request) {
-        return HttpMethod.HEAD.equals(request.getMethod());
-    }
-
-    /**
      * Returns true if the HTTP response from the server is expected to indicate its own message length/end-of-message. Returns false
      * if the server is expected to indicate the end of the HTTP entity by closing the connection.
-     * <p/>
+     * <p>
      * This method is based on the allowed message length indicators in the HTTP specification, section 4.4:
      * <pre>
          4.4 Message Length
@@ -463,7 +458,7 @@ public class ProxyUtils {
      *     Transfer-Encoding: chunked
      * </pre>
      * This method will return a list of three values: "gzip", "deflate", "chunked".
-     * <p/>
+     * <p>
      * Placing values on multiple header lines is allowed under certain circumstances
      * in RFC 2616 section 4.2, and in RFC 7230 section 3.2.2 quoted here:
      * <pre>
@@ -583,6 +578,89 @@ public class ProxyUtils {
             return NioUdtProvider.BYTE_PROVIDER != null;
         } catch (NoClassDefFoundError e) {
             return false;
+        }
+    }
+
+    /**
+     * Creates a new {@link FullHttpResponse} with the specified String as the body contents (encoded using UTF-8).
+     *
+     * @param httpVersion HTTP version of the response
+     * @param status HTTP status code
+     * @param body body to include in the FullHttpResponse; will be UTF-8 encoded
+     * @return new http response object
+     */
+    public static FullHttpResponse createFullHttpResponse(HttpVersion httpVersion,
+                                                          HttpResponseStatus status,
+                                                          String body) {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        ByteBuf content = Unpooled.copiedBuffer(bytes);
+
+        return createFullHttpResponse(httpVersion, status, "text/html; charset=utf-8", content, bytes.length);
+    }
+
+    /**
+     * Creates a new {@link FullHttpResponse} with no body content
+     *
+     * @param httpVersion HTTP version of the response
+     * @param status HTTP status code
+     * @return new http response object
+     */
+    public static FullHttpResponse createFullHttpResponse(HttpVersion httpVersion,
+                                                          HttpResponseStatus status) {
+        return createFullHttpResponse(httpVersion, status, null, null, 0);
+    }
+
+    /**
+     * Creates a new {@link FullHttpResponse} with the specified body.
+     *
+     * @param httpVersion HTTP version of the response
+     * @param status HTTP status code
+     * @param contentType the Content-Type of the body
+     * @param body body to include in the FullHttpResponse; if null
+     * @param contentLength number of bytes to send in the Content-Length header; should equal the number of bytes in the ByteBuf
+     * @return new http response object
+     */
+    public static FullHttpResponse createFullHttpResponse(HttpVersion httpVersion,
+                                                          HttpResponseStatus status,
+                                                          String contentType,
+                                                          ByteBuf body,
+                                                          int contentLength) {
+        DefaultFullHttpResponse response;
+
+        if (body != null) {
+            response = new DefaultFullHttpResponse(httpVersion, status, body);
+            response.headers().set(HttpHeaders.Names.CONTENT_LENGTH, contentLength);
+            response.headers().set(HttpHeaders.Names.CONTENT_TYPE, contentType);
+        } else {
+            response = new DefaultFullHttpResponse(httpVersion, status);
+        }
+
+        return response;
+    }
+
+    /**
+     * Given an HttpHeaders instance, removes 'sdch' from the 'Accept-Encoding'
+     * header list (if it exists) and returns the modified instance.
+     *
+     * Removes all occurrences of 'sdch' from the 'Accept-Encoding' header.
+     * @param headers The headers to modify.
+     */
+    public static void removeSdchEncoding(HttpHeaders headers) {
+        List<String> encodings = headers.getAll(HttpHeaders.Names.ACCEPT_ENCODING);
+        headers.remove(HttpHeaders.Names.ACCEPT_ENCODING);
+
+        for (String encoding : encodings) {
+            if (encoding != null) {
+                // The former regex should remove occurrences of 'sdch' while the
+                // latter regex should take care of the dangling comma case when
+                // 'sdch' was the first element in the list and there are other
+                // encodings.
+                encoding = encoding.replaceAll(",? *(sdch|SDCH)", "").replaceFirst("^ *, *", "");
+
+                if (StringUtils.isNotBlank(encoding)) {
+                    headers.add(HttpHeaders.Names.ACCEPT_ENCODING, encoding);
+                }
+            }
         }
     }
 }

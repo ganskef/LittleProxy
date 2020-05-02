@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/ganskef/LittleProxy.png?branch=master)](https://travis-ci.org/ganskef/LittleProxy)
 
-LittleProxy is a high performance HTTP proxy written in Java atop Trustin Lee's excellent [Netty](netty.io) event-based networking library. It's quite stable, performs well, and is easy to integrate into your projects. 
+LittleProxy is a high performance HTTP proxy written in Java atop Trustin Lee's excellent [Netty](http://netty.io) event-based networking library. It's quite stable, performs well, and is easy to integrate into your projects. 
 
 One option is to clone LittleProxy and run it from the command line. This is as simple as:
 
@@ -16,7 +16,7 @@ You can embed LittleProxy in your own projects through Maven with the following:
     <dependency>
         <groupId>org.littleshoot</groupId>
         <artifactId>littleproxy</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.2</version>
     </dependency>
 ```
 
@@ -28,6 +28,12 @@ HttpProxyServer server =
         .withPort(8080)
         .start();
 ```
+
+To intercept and manipulate HTTPS traffic, LittleProxy uses a man-in-the-middle (MITM) manager. LittleProxy's default
+implementation (`SelfSignedMitmManager`) has a fairly limited feature set. For greater control over certificate impersonation,
+browser trust, the TLS handshake, and more, use a the LittleProxy-compatible MITM extension:
+- [LittleProxy-mitm](https://github.com/ganskef/LittleProxy-mitm) - A LittleProxy MITM extension that aims to support every Java platform including Android
+- [mitm](https://github.com/lightbody/browsermob-proxy/tree/master/mitm) - A LittleProxy MITM extension that supports elliptic curve cryptography and custom trust stores
 
 To filter HTTP traffic, you can add request and response filters using a 
 `HttpFiltersSource(Adapter)`, for example:
